@@ -1,8 +1,33 @@
 version: '2.0'
+networks:
+  main:
+    driver: bridge
 services:
+
+  hdfs-master:
+    image: hdfs:latest
+    networks:
+      - main
+    ports:
+     - "50070:50070"
+     - "8088:8088"
+    command: master
+    hostname: hadoop-master
+
+  hdfs-worker-1:
+    image: hdfs:latest
+    command: worker
+    networks:
+      - main
+    ports:
+     - "50075"
+     - "8142:8042"
+     - "19888:19888"
 
   kafka-broker-1:
     image: confluent/kafka
+    networks:
+      - main
     environment:
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
@@ -14,6 +39,8 @@ services:
 
   kafka-broker-2:
     image: confluent/kafka
+    networks:
+      - main
     environment:
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9093
@@ -25,6 +52,8 @@ services:
 
   kafka-broker-3:
     image: confluent/kafka
+    networks:
+      - main
     environment:
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9094
@@ -36,22 +65,19 @@ services:
 
   zookeeper:
     image: zookeeper:3.5
+    networks:
+      - main
     ports:
       - 2181:2181
 
   connect:
     image: confluentinc/cp-kafka-connect:3.3.0
-    environment:
-      CONNECT_BOOTSTRAP_SERVERS: kafka-broker-1:9092
-      CONNECT_GROUP_ID: connect
-      CONNECT_CONFIG_STORAGE_TOPIC: config-topic
-      CONNECT_OFFSET_STORAGE_TOPIC: offset-topic
-      CONNECT_STATUS_STORAGE_TOPIC: status-topic
-      CONNECT_KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
-      CONNECT_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
-      CONNECT_INTERNAL_KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
-      CONNECT_INTERNAL_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
-      CONNECT_REST_ADVERTISED_HOST_NAME: localhost
+    networks:
+      - main
+    volumes:
+      - ./hdfs-connector.properties:/opt/config/connect/hdfs-connector.properties
+      - ./connect-distributed.properties:/opt/config/connect/connect-distributed.properties
+    command: connect-distributed /opt/config/connect/connect-distributed.properties
     ports:
       - 8083:8083
     links:
