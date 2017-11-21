@@ -70,6 +70,23 @@ services:
     ports:
       - 2181:2181
 
+  cassandra_1:
+    image: cassandra:3.11.1
+    networks:
+      - main
+    ports:
+      - 7000:7000
+      - 9042:9042
+    links:
+      - cassandra_2
+
+  cassandra_2:
+    image: cassandra:3.11.1
+    networks:
+      - main
+    ports:
+      - 7070:7000
+
   connect:
     image: confluentinc/cp-kafka-connect:3.3.0
     networks:
