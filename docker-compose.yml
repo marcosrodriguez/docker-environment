@@ -35,7 +35,7 @@ services:
   kafka-broker-1:
     image: wurstmeister/kafka:0.11.0.0
     environment:
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ZOOKEEPER_CONNECT: zk:2181
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
       KAFKA_BROKER_ID: 1
     ports:
@@ -44,12 +44,12 @@ services:
      - main
     container_name: broker1
     links:
-      - zookeeper
+      - zk
 
   kafka-broker-2:
     image: wurstmeister/kafka:0.11.0.0
     environment:
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ZOOKEEPER_CONNECT: zk:2181
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9093
       KAFKA_BROKER_ID: 2
     ports:
@@ -58,12 +58,12 @@ services:
      - main
     container_name: broker2
     links:
-      - zookeeper
+      - zk
 
   kafka-broker-3:
     image: wurstmeister/kafka:0.11.0.0
     environment:
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ZOOKEEPER_CONNECT: zk:2181
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9094
       KAFKA_BROKER_ID: 3
     ports:
@@ -72,15 +72,15 @@ services:
      - main
     container_name: broker3
     links:
-      - zookeeper
+      - zk
 
-  zookeeper:
+  zk:
     image: zookeeper:3.5
     ports:
       - 2181:2181
     networks:
      - main
-    container_name: zookeeper
+    container_name: zk
 
   cassandra_1:
     image: cassandra:3.11.1
@@ -101,19 +101,22 @@ services:
      - main
     container_name: cassandra2
 
-  connect:
-    image: confluentinc/cp-kafka-connect:3.3.0
+  kafka_connect:
+    image: confluentinc/cp-kafka-connect:4.0.0
+    environment:
+      CONNECT_PLUGIN_PATH: /usr/share/java/
     volumes:
       - ./hdfs-connector.properties:/opt/config/connect/hdfs-connector.properties
+      - ./ingest-files-connector.properties:/opt/config/connect/ingest-files-connector.properties
       - ./connect-distributed.properties:/opt/config/connect/connect-distributed.properties
     command: connect-distributed /opt/config/connect/connect-distributed.properties
     ports:
       - 8083:8083
     networks:
      - main
-    container_name: connect
+    container_name: kafka_connect
     links:
-      - zookeeper
+      - zk
       - kafka-broker-1
       - kafka-broker-2
       - kafka-broker-3

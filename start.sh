@@ -19,17 +19,31 @@ export HOST_IP=$1
 
 docker-compose down
 
-docker build -t connect:latest connect-container
 docker build -t hdfs:latest hdfs-container
-docker-compose up -d zookeeper
+
+docker-compose up -d zk
 sleep 10
-docker-compose up -d
-sleep 60
+docker-compose up -d kafka-broker-1
+sleep 10
+docker-compose up -d kafka-broker-2
+sleep 10
+docker-compose up -d kafka-broker-3
+sleep 10
+docker-compose up -d kafka_connect
+sleep 10
+docker-compose up -d 
+sleep 10
 
-
-docker exec -it connect curl -X POST \
+docker exec -it kafka_connect curl -X POST \
   -H "Content-Type: application/json" \
-  --data '{ "name": "hdfs-sink-connector", "config": { "connector.class": "io.confluent.connect.hdfs.HdfsSinkConnector", "tasks.max": 1, "topics": "clients_topic", "hdfs.url": "hdfs://hdfs-master:9000", "hadoop.conf.dir": "/opt/hadoop/conf" ,"hadoop.home": "/opt/hadoop","flush.size": 1 } }' \
+  --data '{ "name": "hdfs-sink", "config": { "connector.class": "io.confluent.connect.hdfs.HdfsSinkConnector", "tasks.max": 1, "topics": "clients_topic", "hdfs.url": "hdfs://hdfs-master:9000","flush.size": 3 } }' \
   http://localhost:8083/connectors
+
+docker exec -it kafka_connect curl -X POST \
+  -H "Content-Type: application/json" \
+  --data '{ "name": "csv-file-source", "config": { "connector.class": "FileStreamSource", "tasks.max": 1, "topic": "clients_topic", "file": "/tmp/prueba.csv" } }' \
+  http://localhost:8083/connectors
+
+#docker exec -it kafka_connect curl -X DELETE http://localhost:8083/connectors/csv-file-source
 
 
